@@ -23,8 +23,15 @@ create table funcionario(
 create table departamento(
     num smallint primary key,
     nome varchar(50) unique,
-    cpf_gerente char(11)
+    cpf_gerente char(11),
+    data_ini date not null
 );
+
+
+/*
+-- Adicionar uma restrição padrão
+alter table funcionario
+alter column endereco set default 'Macaíba-RN';
 
 -- Adiciona coluna
 alter table departamento
@@ -37,10 +44,6 @@ alter column data_inicio set not null;
 -- Deleta coluna
 alter table departamento
 drop column data_inicio;
-
--- Adicionar uma restrição padrão
-alter table funcionario
-alter column endereco set default 'Macaíba-RN';
 
 -- Excluir um valor padrão DEFAULT
 alter table funcionario
@@ -61,3 +64,10 @@ add constraint funcionario_num_dep_fk
 foreign key (num_departamento) references departamento(num)
 on delete no action
 on update cascade;
+
+alter table departamento
+add constraint departamento_cpf_gerente_fk
+foreign key (cpf_gerente) references funcionario(cpf)
+on delete set null
+on update cascade;
+*/
