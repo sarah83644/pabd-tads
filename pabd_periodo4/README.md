@@ -1,3 +1,5 @@
+## [Site para exercitar SQL](https://pgexercises.com/)
+
 ## Diretório para os exemplos de Programação e Administração de Banco de Dados - 4º período
 
 ### Configurando PostgreSQL no GitHub Codespaces
