@@ -21,6 +21,7 @@ insert into products (name, price, stock) values ('Tablet Samsung Galaxy Tab S10
 delete from products p where not exists (select * from orders_products op where op.product_id = p.id);
 
 -- 6. Liste todos os pedidos realizados nos últimos 30 dias.
+select * from orders o where o.order_date >= current_date - interval '30 days';
 
 -- 7. Liste os pedidos e os respectivos nomes de usuário.
 select od.id as "ID do pedido", od.status as "Status do pedido", u.name as "Usuário correspondente" from orders od join users u on u.id = od.user_id;
@@ -47,5 +48,7 @@ select p.name produto, p.price preco from products p where p.price > (select avg
 select u.name nome, count(*) qtd_pedidos from orders o join users u on u.id = o.user_id group by o.user_id, u.name order by o.user_id;
 
 -- 14. Listar os três produtos mais vendidos.
+select p.name nome, sum(op.quantity) quantidade from products p join orders_products op on p.id = op.product_id group by op.product_id, p.name order by quantidade desc limit 3;
+
 -- 15. Gerar um relatório com: usuários, quantidade de pedidos e valor total comprado.
-select u.name nome, count(*) qtd_pedidos, sum(o.total) total from orders o join users u on u.id = o.user_id group by o.user_id, u.name;
+select u.name nome, count(*) qtd_pedidos, sum(o.total) total from orders 
