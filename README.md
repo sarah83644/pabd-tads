@@ -1,10 +1,8 @@
 ## [Site para exercitar SQL](https://pgexercises.com/)
 
-## Diretório para os exemplos de Programação e Administração de Banco de Dados - 4º período
+## Configurando PostgreSQL no Github Codespaces:
 
-### Configurando PostgreSQL no GitHub Codespaces
-
-#### 1. Instalando o Postgres
+# 1. Instalando Postgres
 
 ```bash
 sudo apt update
@@ -12,22 +10,18 @@ sudo apt install -y postgresql postgresql-client postgresql-contrib
 sudo service postgresql start
 ```
 
-#### 2. Adicionar Permissão
-
+# 2. Adicionar permissão
 ```bash
 echo "codespace ALL=(postgres) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/codespace-postgres
 sudo chmod 440 /etc/sudoers.d/codespace-postgres
 ```
 
-#### 3. Testar a Instalação
-
-
+# 3. Testar
 ```bash
 sudo -u postgres psql -c "SELECT version();"
 ```
 
-#### 4. Criar um Novo Usuário e Banco de Dados
-
+# 4. Criar um novo usuário e novo banco de dados
 ```bash
 sudo -u postgres psql <<'SQL'
 CREATE ROLE admin LOGIN PASSWORD 'root' SUPERUSER;
@@ -35,31 +29,75 @@ CREATE DATABASE pabd OWNER admin;
 SQL
 ```
 
-#### 5. Conectar com o Novo Usuário
+`<<'SQL' ... SQL` -> Heredoc: passa várias linhas SQL como entrada para o psql
 
+# 5. Conectar com o novo usuário
 ```bash
-psql -h 127.0.0.1 -p 5432 -U admin -d pabd
+psql -h 127.0.0.1 -U admin -d pabd
 ```
 
-##### Detalhes dos Parâmetros:
-* `-h`: Especifica o host.
-* `-p`: Especifica a porta.
-* `-U`: Especifica o usuário.
-* `-d`: Especifica o banco de dados.
-* `-W`: *(Opcional)* Força o prompt de senha (em vez de confiar em variáveis `PGPASSWORD` ou no arquivo `.pgpass`).
-* `-c`: Executa um comando SQL direto sem abrir o terminal interativo.
+-h host
+-p porta
+-U usuário
+-d database
+-W força o prompt da senha (em vez de confiar em PGPASSWORD ou .pgpass)
+-c comando SQL
 
-> [!IMPORTANT]
-> **Diferença Importante (127.0.0.1 vs localhost):**  
-> Utilizamos explicitamente o IP `127.0.0.1` em vez de `localhost`. No PostgreSQL, o termo `localhost` pode tentar realizar a conexão via socket Unix (utilizando autenticação do tipo `peer`), enquanto o IP `127.0.0.1` força uma conexão de rede via TCP/IP. Isso garante que a autenticação por senha seja exigida e funcione corretamente para a role que acabamos de criar.
+Diferença importante: aqui usamos `127.0.0.1`, não `localhost`. No PostgreSQL, `localhost` pode tentar conexão via socket Unix (e, em alguns casos, usar autenticação peer), enquanto 127.0.0.1 força a conexão via TCP/IP, onde a autenticação por senha normalmente é exigida. Isso é crucial quando a role foi criada com senha.
 
-#### 6. Exibir Todas as Tabelas
-
-Após se conectar ao banco de dados, você pode listar todas as tabelas criadas no esquema público utilizando a seguinte consulta SQL:
-
+# 6. Exibir todas as tabelas
 ```sql
 SELECT table_name 
 FROM information_schema.tables 
 WHERE table_schema = 'public' 
   AND table_type = 'BASE TABLE';
 ```
+
+# 7. Comando úteis do psql
+
+Listar todas as tabelas: \dt
+Mostrar a descrição de uma tabela: \d TABELA
+Executar um arquivo: \i PATH
+
+# 8. Usando `pg_restore` para criar o banco de dados `dvdrental`
+
+Faça o donwload no link (https://neon.com/postgresqltutorial/dvdrental.zip). 
+
+Após descompactar, coloque o arquivo `dvdrental.tar` na pasta `utils`.
+
+```bash
+sudo -u postgres
+psql
+```
+
+Uma vez dentro do prompt do PostgreSQL, defina uma senha para o usuário `postgres`:
+
+```sql
+ALTER USER postgres PASSWORD 'postgres';
+```
+
+Sair do psql e do sudo. Criar o banco de dados `dvdrental`:
+
+```bash
+psql -h 127.0.0.1 -U postgres
+```
+
+Dentro do psql: 
+
+```sql
+CREATE DATABASE dvdrental;
+```
+
+Sair do psql. Depois, no terminal:
+
+```bash
+pg_restore -h 127.0.0.1 -U postgres -d dvdrental utils/dvdrental.tar 
+```
+
+Para testar, entre no `psql` e digite:
+
+```bash
+\c dvdrental
+```
+
+Para exibir todas as tabelas: `\dt`
