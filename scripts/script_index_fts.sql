@@ -4,6 +4,9 @@ CREATE TABLE
         id serial PRIMARY KEY,
         title text NOT NULL,
         body text NOT NULL,
+        search_vector tsvector GENERATED ALWAYS AS (
+            setweight(to_tsvector('portuguese', title), 'A') || -- setweight: é uma função nativa usada para configurar o "peso" (prioridade) de elementos em buscas de texto completo (Full Text Search - FTS).
+            setweight(to_tsvector('portuguese', body), 'B')) stored,
         created_at timestamptz NOT NULL DEFAULT now ()
     );
 

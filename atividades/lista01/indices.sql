@@ -1,9 +1,3 @@
-select 
-    (select count(*) from orders as total_orders),
-    (select count(*) from orders_products as total_orders_products),
-    (select count(*) from products as total_products),
-    (select count(*) from users as total_users);
-
 -- tive que desativar a busca sequencial para forçar o postgres a usar o índice, porque as tabelas tem poucos elementos
 set enable_seqscan = off;
 

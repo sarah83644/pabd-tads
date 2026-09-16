@@ -108,3 +108,56 @@ drop index if exists idx_posts_search_gin;
 create index idx_posts_search_gin on posts using gin(to_tsvector('portuguese', title || ' ' || body));
 
 select id, title, body from posts where to_tsvector('portuguese', title || ' ' || body) @@ to_tsquery('portuguese', 'postgresql & recursos');
+
+    -- 1) Busca título e corpo que contenham as palavras 'postgresql' E 'recursos'
+    -- to_tsvector ('portuguese', title || ' ' || body) @@ to_tsquery('portuguese', 'postgresql & recursos');
+
+    -- 2) Busca título e corpo que contenham as palavras 'eficiente' OU 'recursos'
+    -- to_tsvector ('portuguese', title || ' ' || body) @@ to_tsquery('portuguese', 'eficiente | recursos');
+
+    -- 3) Busca título e corpo que contenha a frase "full-text search"
+    -- to_tsvector ('portuguese', title || ' ' || body) @@ to_tsquery('portuguese', '''full-text search''');
+
+    -- 4) Busca título e corpo que NÃO contenha a palavra 'eficiente'
+    -- to_tsvector ('portuguese', title || ' ' || body) @@ to_tsquery('portuguese', '!eficiente');
+
+    -- 5) Busca título e corpo por prefixo 'con'
+    -- to_tsvector ('portuguese', title || ' ' || body) @@ to_tsquery('portuguese', 'con:*');
+
+-- para tabelas muito grandes
+/* CREATE TABLE
+    posts (
+        id serial PRIMARY KEY,
+        title text NOT NULL,
+        body text NOT NULL,
+        search_vector tsvector GENERATED ALWAYS AS (
+            setweight(to_tsvector('portuguese', title), 'A') ||
+            setweight(to_tsvector('portuguese', body), 'B')) stored,
+        created_at timestamptz NOT NULL DEFAULT now ()
+    ); */
+
+select
+    id,
+    title,
+    body,
+    ts_rank(
+        -- não preciso passar o setweight aqui pois ele já foi criado no ato da criação da tabela. basta passar o search_vector que foi criado na tabela
+        search_vector,
+        to_tsquery('portuguese', 'postgresql')
+    ) rank
+from posts
+where search_vector @@ to_tsquery('portuguese', 'postgresql')    
+order by rank desc;
+
+drop index if exists idx_search_vector_gin;
+create index idx_search_vector_gin on posts using gin (search_vector);
+
+/*  Sort  (cost=12.58..12.58 rows=1 width=72) (actual time=0.023..0.024 rows=0 loops=1)
+   Sort Key: (ts_rank(search_vector, '''postgresql'''::tsquery)) DESC
+   Sort Method: quicksort  Memory: 25kB
+   ->  Bitmap Heap Scan on posts  (cost=8.55..12.57 rows=1 width=72) (actual time=0.018..0.019 rows=0 loops=1)
+         Recheck Cond: (search_vector @@ '''postgresql'''::tsquery)
+         ->  Bitmap Index Scan on idx_search_vector_gin  (cost=0.00..8.55 rows=1 width=0) (actual time=0.006..0.007 rows=0 loops=1)
+               Index Cond: (search_vector @@ '''postgresql'''::tsquery)
+ Planning Time: 0.166 ms
+ Execution Time: 0.066 ms */
