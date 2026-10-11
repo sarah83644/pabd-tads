@@ -88,6 +88,7 @@ Sempre que o cliente abre seu perfil no aplicativo, o sistema busca o histórico
 
 Para otimizar essa consulta específica, crie um índice multicoluna na tabela `payment`. Qual coluna deve vir primeiro no índice e por quê?
 
+### Solução da questão 05
 ~~~sql
 create index idx_check_history on payment(customer_id, payment_date);
 ~~~
@@ -97,6 +98,8 @@ create index idx_check_history on payment(customer_id, payment_date);
 ## Questão 06 - Login Case-Insensitive
 
 O suporte técnico frequentemente busca clientes pelo e-mail, mas os atendentes não se preocupam com letras maiúsculas ou minúsculas (ex: buscam por `MARY.SMITH@...` quando o e-mail está gravado como `mary.smith@...`). Crie um **Índice Funcional** (Expression Index) na tabela `customer` que permita buscas rápidas e *case-insensitive* na coluna `email`. Crie uma consulta usando `EXPLAIN ANALYZE` para provar que o índice está sendo utilizado.
+
+### Solução da questão 06
 ~~~sql
 create index idx_login_case_sensitive on customer(lower(email));
 select first_name || '' || last_name nome, email from customer where lower(email) = lower('MARY.SMITH@SAKILACUSTOMER.ORG');
@@ -114,6 +117,7 @@ select first_name || '' || last_name nome, email from customer where lower(email
 
 Ocorreu um bug no front-end que permitiu inserir locações onde a data de devolução (`return_date`) era *anterior* à data de locação (`rental_date`), gerando multas negativas. Crie um trigger `BEFORE INSERT OR UPDATE` na tabela `rental` que lance uma exceção (`RAISE EXCEPTION`) caso o `NEW.return_date` seja menor que o `NEW.rental_date`. Lembre-se de tratar o caso onde o `return_date` é `NULL` (o filme ainda está com o cliente). Realize 2 consultas teste para validar (sucesso/falha)
 
+### Solução da questão 07
 ~~~sql
 create or replace function check_return_date()
     returns trigger
@@ -136,6 +140,7 @@ for each row execute function check_return_date();
 
 A administração suspeita que gerentes de loja estão alterando o custo de substituição (`replacement_cost`) de filmes raros sem autorização. Crie uma tabela de auditoria chamada `film_cost_audit` (`film_id`, `old_cost`, `new_cost`, `changed_at`) e uma trigger `AFTER UPDATE` na tabela `film` que insira um registro nessa tabela **apenas** se o `replacement_cost` for efetivamente modificado (utilize a cláusula `WHEN` na criação da trigger).
 
+### Solução da questão 08
 ~~~sql
 create table film_cost_audit (
     film_id smallint primary key,
@@ -171,6 +176,7 @@ execute function check_change_replacement_cost();
 
 Para evitar "buracos" no catálogo e erros de chave estrangeira órfã, o banco de dados não deve permitir a exclusão de um idioma da tabela `language` caso existam filmes cadastrados que o utilizem (seja como idioma original ou de áudio). Crie uma trigger `BEFORE DELETE` na tabela `language` que verifique as tabelas `film` (`language_id` e `original_language_id`). Se houver filmes vinculados, a exclusão deve ser abortada com uma mensagem de erro amigável.
 
+### Solução da questão 09
 ~~~sql
 create or replace function check_movie_language()
     returns trigger
@@ -199,6 +205,7 @@ Para evitar contar as linhas da tabela `rental` toda vez que quisermos saber qua
 - Popule-a inicialmente com os dados atuais.
 - Crie uma trigger `AFTER INSERT` na tabela `rental` que, a cada nova locação, atualize (incremento `+1`) o contador do respectivo cliente na tabela de estatísticas (verifique a existência).
 
+### Solução da questão 10
 ~~~sql
 create table customer_rental_stats (
     customer_id smallint primary key,
