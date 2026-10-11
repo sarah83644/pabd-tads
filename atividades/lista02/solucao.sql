@@ -63,3 +63,94 @@ create or replace function check_return_date()
 drop trigger if exists trg_check_return_date on rental;
 create trigger trg_check_return_date before insert or update on rental
 for each row execute function check_return_date();
+
+-- Questão 08 - Auditoria de Preços
+create table film_cost_audit (
+    film_id smallint primary key,
+    old_cost numeric (7, 2),
+    new_cost numeric (7, 2),
+    change_at timestamptz default now()
+);
+
+create or replace function check_change_replacement_cost()
+    returns trigger
+    language plpgsql as 
+    $$
+    begin
+        if NEW.replacement_cost != OLD.replacement_cost then 
+            insert into film_cost_audit (film_id, old_cost, new_cost)
+            values (OLD.film_id, OLD.replacement_cost, NEW.replacement_cost);
+        end if;
+
+        return NEW;
+    end;
+    $$;
+
+drop trigger if exists trg_check_change_replacement_cost on film;
+create trigger trg_check_change_replacement_cost 
+after update on film
+for each row
+when (NEW.replacement_cost != OLD.replacement_cost)
+execute function check_change_replacement_cost();
+
+update film set replacement_cost = '676.67' where film_id = 3; -- teste
+
+-- Questão 09 - Proteção de Catálogo
+create or replace function check_movie_language()
+    returns trigger
+    language plpgsql as
+    $$
+    begin
+        if exists (select 1 from film where language_id = OLD.language_id) then
+            raise exception 'Não é possível excluir essa linguagem porque ela está vinculado à 1 ou mais filmes';
+        end if;
+    end;
+    $$;
+
+drop trigger if exists trg_check_movie_language on language;
+create trigger trg_check_movie_language
+before delete on language
+for each row 
+execute function check_movie_language();
+
+delete from language where language_id = 1;
+
+-- Questão 10 - Sincronização de Estatísticas
+create table customer_rental_stats (
+    customer_id smallint primary key,
+    total_rentals int default 0
+);
+
+insert into customer_rental_stats (customer_id, total_rentals)
+select c.customer_id, count(r.rental_id) from customer c
+left join rental r on c.customer_id = r.customer_id
+group by c.customer_id;
+
+create or replace function change_quantity_rentals()
+    returns trigger
+    language plpgsql as 
+    $$ 
+    declare contagem_locacoes int; rental_stats int;
+    begin
+        select count(r.rental_id) into contagem_locacoes from customer c
+        left join rental r on c.customer_id = r.customer_id;
+        select crs.total_rentals into rental_stats from customer_rental_stats crs;
+
+        if rental_stats < contagem_locacoes then
+            rental_stats = rental_stats + 1;
+            update customer_rental_stats set total_rentals = rental_stats;
+        end if;
+        return NEW;
+    end;
+    $$;
+
+drop trigger if exists trg_change_quantity_rentals on rental;
+create trigger trg_change_quantity_rentals 
+after insert on rental
+for each row
+execute function change_quantity_rentals();
+
+insert into rental (rental_date, inventory_id, customer_id, staff_id, return_date)
+values (now(), 1, 1, 1, null);
+
+select * from customer_rental_stats where customer_id = 1;
